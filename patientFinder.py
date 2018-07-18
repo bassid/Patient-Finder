@@ -1,3 +1,8 @@
+# Written by Danish Bassi
+#
+# A trivial script which utilises the PyQt5 library to create a simple GUI
+# for fetching data stored in PDF files stored on a drive
+
 import sys
 import os
 
@@ -18,9 +23,10 @@ class PatientFinder(QMainWindow):
 
     def initUI(self):
 
+        # Create the layout
         btn1 = QPushButton("Find patients", self)
         btn1.setGeometry(10, 20, 200, 25)
-        btn1.clicked.connect(self.buttonClicked)
+        btn1.clicked.connect(self.findPatients)
 
         btn2 = QPushButton("Save to text file", self)
         btn2.setGeometry(200, 20, 200, 25)
@@ -48,22 +54,26 @@ class PatientFinder(QMainWindow):
         self.setWindowTitle('Patient Finder')
         self.show()
 
-    def buttonClicked(self):
+    # Find patients button handler
+    def findPatients(self):
         self.outString = ""
         self.found = []
 
+        # Obtain the directory to begin searching from
         directory = str(QFileDialog.getExistingDirectory(
             self, "Select directory to search from"))
 
+        # If a directory was selected, continue
         if directory:
-            # Start from root dir
+            # Start from the directory and recursively fetch each file
             for root, dirs, files in os.walk(directory):
                 # Append each file name found to output string
                 for file in files:
+                    # Check if file is of PDF type
                     with open(os.path.join(root, file), 'rb') as input:
                         mime_type = magic.from_buffer(input.readline())
+                        # If it is a PDF file, append to string to display output
                         if "PDF" in mime_type:
-                            print(file)
                             self.outString = self.outString + \
                                 (str(file) + "\n")
                             self.found.append(file)
@@ -79,9 +89,11 @@ class PatientFinder(QMainWindow):
             self.show()
 
     def saveToTxt(self):
+        # Obtain the directory to save list in 
         directory = str(QFileDialog.getExistingDirectory(
             self, "Select directory to save list in."))
 
+        # If a directory was selected, save list in a txt file in chosen directory with current timestamp
         if directory:
             try:
                 print(self.found)
@@ -99,7 +111,7 @@ class PatientFinder(QMainWindow):
                     self, 'Error', "The list is empty. Please press 'Find Patients' button before saving to text file", QMessageBox.Ok)
                 print("List is empty. Abort command.")
 
-
+# Execute the program
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = PatientFinder()
