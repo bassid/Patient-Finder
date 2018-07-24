@@ -1,9 +1,11 @@
 # Written by Danish Bassi
 #
 # A trivial script which utilises the PyQt5 library to create a simple GUI
-# for fetching data stored in PDF files stored on a drive
+# for recursively fetching data stored in PDF files starting from a directory
+# chosen by the user
 #
 # TO DO: Extract data from PDF files to analyze
+
 
 import sys
 import os
@@ -74,7 +76,7 @@ class PatientFinder(QMainWindow):
                 self, 'Information', "Patient searching will begin after you press OK.\n\nPlease be patient as this could possibly take a while", QMessageBox.Ok)
             # Start from the directory and recursively fetch each file
             for root, dirs, files in os.walk(directory):
-                # Append each file name found to output string
+                # For each file that was found
                 for file in files:
                     # Check if file is of PDF type
                     with open(os.path.join(root, file), 'rb') as input:
