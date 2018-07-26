@@ -15,7 +15,9 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
 from datetime import datetime
-import magic
+# import magic
+# from mimetypes import MimeTypes
+import filetype
 
 
 class PatientFinder(QMainWindow):
@@ -78,15 +80,16 @@ class PatientFinder(QMainWindow):
             for root, dirs, files in os.walk(directory):
                 # For each file that was found
                 for file in files:
-                    # Check if file is of PDF type
-                    with open(os.path.join(root, file), 'rb') as input:
-                        mime_type = magic.from_buffer(input.readline())
-                        # If it is a PDF file, append to string to display output
-                        if "PDF" in mime_type:
-                            self.outString = self.outString + \
-                                (str(file) + "\n")
-                            self.found.append(file)
-
+                    # Check if file is of PDF type                  
+                    kind = filetype.guess(os.path.join(root, file))
+                    if kind is None:
+                        print('Cannot guess file type!')
+                        continue
+                    elif "pdf" in str(kind.mime):
+                        self.outString = self.outString + \
+                            (str(file) + "\n")
+                        self.found.append(file)
+                    
             # For debug purposes. Remove later
             ''' buttonReply = QMessageBox.question(
                 self, 'Saved', self.outString, QMessageBox.Ok) '''
