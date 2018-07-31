@@ -19,6 +19,8 @@ from datetime import datetime
 # import magic
 # from mimetypes import MimeTypes
 import filetype
+import winshell
+import glob
 
 
 class PatientFinder(QMainWindow):
@@ -75,7 +77,6 @@ class PatientFinder(QMainWindow):
         URNS = self.textbox.text()
         if re.match("^[0-9 ]+$", URNS) is not None:
             URNS = URNS.split()
-            print(URNS)
 
             # Obtain the directory to begin searching from
             directory = str(QFileDialog.getExistingDirectory(
@@ -90,8 +91,12 @@ class PatientFinder(QMainWindow):
                 for root, dirs, files in os.walk(directory):
                     # For each file that was found
                     for file in files:
-                        # Check if file is of PDF type                  
-                        kind = filetype.guess(os.path.join(root, file))
+                       
+                        # Get the target path of the shortcut link
+                        shortcut = winshell.shortcut(os.path.join(root, file))    
+                      
+                        # Check if file is of PDF type
+                        kind = filetype.guess(shortcut.path)
 
                         # If it is not a PDF file
                         if kind is None:
@@ -99,16 +104,17 @@ class PatientFinder(QMainWindow):
                             continue
                         # If it is a PDF
                         elif "pdf" in str(kind.mime):
+                            
                             # Get the URN from the name and check if it is in the input list
-                            fileURN = re.findall('\d+', file )
+                            fileURN = re.findall('\d+', file )                                
 
                             # Check if the URN is in the list of input URNs
                             for ur in fileURN:
                                 if ur in URNS:
                                     # Added file name to the output string
                                     self.outString = self.outString + \
-                                        (str(file) + "\n")
-                                    self.found.append(file)
+                                        (str(file[:-4]) + "\n")
+                                    self.found.append(file[:-4])                        
                         
                 # For debug purposes. Remove later
                 ''' buttonReply = QMessageBox.question(
