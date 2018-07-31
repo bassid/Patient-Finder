@@ -16,8 +16,6 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
 from datetime import datetime
-# import magic
-# from mimetypes import MimeTypes
 import filetype
 
 
@@ -90,25 +88,29 @@ class PatientFinder(QMainWindow):
                 for root, dirs, files in os.walk(directory):
                     # For each file that was found
                     for file in files:
-                        # Check if file is of PDF type                  
-                        kind = filetype.guess(os.path.join(root, file))
 
-                        # If it is not a PDF file
-                        if kind is None:
-                            # Continue to the next file
-                            continue
-                        # If it is a PDF
-                        elif "pdf" in str(kind.mime):
-                            # Get the URN from the name and check if it is in the input list
-                            fileURN = re.findall('\d+', file )
+                            location = os.path.realpath(os.path.join(root, file))
+                            print(location)                        
 
-                            # Check if the URN is in the list of input URNs
-                            for ur in fileURN:
-                                if ur in URNS:
-                                    # Added file name to the output string
-                                    self.outString = self.outString + \
-                                        (str(file) + "\n")
-                                    self.found.append(file)
+                            # Check if file is of PDF type                  
+                            kind = filetype.guess(os.path.join(root, file))
+
+                            # If it is not a PDF file
+                            if kind is None:
+                                # Continue to the next file
+                                continue
+                            # If it is a PDF
+                            elif "pdf" in str(kind.mime):
+                                # Get the URN from the name and check if it is in the input list
+                                fileURN = re.findall('\d+', file )
+
+                                # Check if the URN is in the list of input URNs
+                                for ur in fileURN:
+                                    if ur in URNS:
+                                        # Added file name to the output string
+                                        self.outString = self.outString + \
+                                            (str(file) + "\n")
+                                        self.found.append(file)
                         
                 # For debug purposes. Remove later
                 ''' buttonReply = QMessageBox.question(
