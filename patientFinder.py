@@ -1,16 +1,15 @@
 # Written by Danish Bassi
 #
 # A trivial script which utilises the PyQt5 library to create a simple GUI
-# for recursively fetching data stored in PDF files starting from a directory
-# chosen by the user
-#
-# TO DO: Extract data from PDF files to analyze
-
+# for recursively fetching data stored in PDF files and Word documents starting
+# from a directory chosen by the user
 
 import sys
 import os
 import re
 import subprocess
+import uuid
+from hashlib import blake2b
 
 from PyQt5.QtWidgets import QMainWindow, QPushButton, QApplication, QLineEdit, QLabel, QVBoxLayout, QScrollArea, QWidget, QMessageBox, QFileDialog
 from PyQt5.QtGui import *
@@ -27,8 +26,22 @@ class PatientFinder(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        
+        # Insert MAC addresses of machines to run program on here
+        licenses = {}
+        
+        # Encryption method removed for privacy reasons
+        # (Insert encryption here)
 
-        self.initUI()
+        h = blake2b(digest_size=8)
+        h.update(myMacAddress.encode())
+
+        if h.hexdigest().upper() in licenses:   
+            self.initUI()
+        else:
+            QMessageBox.question(
+                    self, 'Not a valid device', "This machine is not licensed to use this software. Please contact Danish Bassi at bassidanish@gmail.com to receive a license. ", QMessageBox.Ok)
+            sys.exit()
 
     def initUI(self):
 
@@ -59,8 +72,9 @@ class PatientFinder(QMainWindow):
         scroll.setStyleSheet('background-color: white; padding: 5; border-style: solid; border-radius: 5;')
 
         self.output = QLabel("Result will appear here", self)
+        self.output.setWordWrap(True)
         self.output.move(30, 90)
-        self.output.setFixedSize(300, 300)
+        self.output.setFixedSize(350, 300)
         self.output.setAlignment(Qt.AlignTop)
 
         scroll.setWidget(self.output)
@@ -74,11 +88,14 @@ class PatientFinder(QMainWindow):
         self.setFixedHeight(425)
         self.setFixedWidth(410)
         self.setWindowTitle('Patient Finder - Royal Melbourne Hospital')
-        #self.setStyleSheet('QTitle{background-color: rgb(179, 43, 36)}')
+        self.setWindowIcon(QIcon('logo.jpg'))
         self.show()
 
     # Get URNs from a CSV file
     def useCSV(self):
+        QMessageBox.question(
+            self, 'Select CSV file', "Please select your CSV file in the following file dialog.", QMessageBox.Ok)
+        
         csv = QFileDialog.getOpenFileName(self, "Select csv file")
         
         print(csv)
@@ -113,6 +130,9 @@ class PatientFinder(QMainWindow):
     # Find patients button handler
     def findPatients(self, URNS):
         self.outString = ""
+
+        QMessageBox.question(
+            self, 'Select directory', "Please select the directory to search from in the following file dialog.", QMessageBox.Ok)
       
         # Obtain the directory to begin searching from
         directory = str(QFileDialog.getExistingDirectory(
@@ -124,23 +144,29 @@ class PatientFinder(QMainWindow):
             # Display message box to inform this process can take a while
             QMessageBox.question(
                 self, 'Information', "Patient searching will begin after you press OK.\n\nPlease be patient as this could possibly take a while", QMessageBox.Ok)
+                        
             # Start from the directory and recursively fetch each file
             for root, dirs, files in os.walk(directory):
                 # For each file that was found
                 for file in files:
-                   
+
+                    # Update output text to show which directory is being searched
+                    self.output.setFixedHeight(300)
+                    self.output.setText("Now searching. Please do not close the program...\n\n" + "Searching in: \n" + str(os.path.join(root, file)))
+                    self.output.repaint()
+                    
                     # Get the target path of the shortcut link
                     shortcut = winshell.shortcut(os.path.join(root, file))
                    
-                    # Check if file is of PDF type
+                    # Get the mime type of file
                     kind = filetype.guess(shortcut.path)
 
-                    # If it is not a PDF file
+                    # If it does not have a mime type
                     if kind is None:
                         # Continue to the next file
                         continue
-                    # If it is a PDF
-                    elif "pdf" in str(kind.mime):
+                    # If it is a .pdf or .docx file 
+                    elif ("pdf" in str(kind.mime)) or (("zip" in str(kind.mime)) and (".docx" in str(file))):
                         
                         # Get the URN from the name and check if it is in the input list
                         fileURN = re.findall('\d+', file )                                
@@ -150,17 +176,24 @@ class PatientFinder(QMainWindow):
                             if ur in URNS:
                                 # Added file name to the output string
                                 self.outString = self.outString + \
-                                    (str(file[:-4]) + "\n")
-                                self.found.append([shortcut.path, file[:-4]])                        
+                                    (str(file) + "\n")
+                                self.found.append([shortcut.path, file])
+                                
+                                    
                     
             # For debug purposes. Remove later
             ''' buttonReply = QMessageBox.question(
                 self, 'Saved', self.outString, QMessageBox.Ok) '''
 
             # Display the output string on GUI
-            self.output.setText(self.outString)
-            self.output.setFixedHeight(20 * len(self.found))
-            self.output.repaint()
+            if self.outString != "":
+                self.output.setText(self.outString)
+                self.output.setFixedHeight(20 * len(self.found))
+                self.output.repaint()
+            else:
+                self.output.setText("No results. Please ensure all URNs have been entered correctly.")
+                self.output.setFixedHeight(20)
+                self.output.repaint()
             self.show()
             print(self.found)
         
@@ -175,7 +208,7 @@ class PatientFinder(QMainWindow):
                 self, "Select directory to save list in."))
         else:
             QMessageBox.question(
-                self, 'Error', "The list is empty. Please press 'Find Patients' button before saving to text file", QMessageBox.Ok)
+                self, 'Empty List', "The list cannot be empty in order to saving to files as shortcuts.", QMessageBox.Ok)
             print("List is empty. Abort command.")
             return
 
@@ -220,6 +253,7 @@ class PatientFinder(QMainWindow):
 
 # Execute the program
 if __name__ == '__main__':
+     
     app = QApplication(sys.argv)
     
     ex = PatientFinder()
@@ -227,5 +261,5 @@ if __name__ == '__main__':
     p = QPalette()
     p.setBrush(QPalette.Window, QBrush(QColor.fromRgb(175, 206, 255)))
     ex.setPalette(p)
-    
-    sys.exit(app.exec_())
+
+    sys.exit(app.exec_()
