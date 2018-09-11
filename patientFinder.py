@@ -33,9 +33,6 @@ class PatientFinder(QMainWindow):
         # Encryption method removed for privacy reasons
         # (Insert encryption here)
 
-        h = blake2b(digest_size=8)
-        h.update(myMacAddress.encode())
-
         if h.hexdigest().upper() in licenses:   
             self.initUI()
         else:
